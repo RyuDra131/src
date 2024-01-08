@@ -22,7 +22,7 @@ def FrontalFaces():
         for(x, y, w, h) in faces:
             imgs = cv2.rectangle(img, (x, y), (x+w , y+h), (0, 0, 255), 3)
         cv2.imwrite(f"./img/capture/{now}.jpg", imgs)
-        cv2.imshow('Faca Detected', imgs)
+        cv2.imshow('Face Detected', imgs)
     except UnboundLocalError:
         cv2.imshow('Not Found', img)
 
