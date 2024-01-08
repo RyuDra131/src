@@ -40,14 +40,18 @@ def FrontalCatFaces():
         cv2.imshow('Not Found', img)
 
 
-# def FrontalFaceGlasses():
-#     eyeglasses = cv2.CascadeClassifier("C:\Users\USER\Desktop\src\data\haarcascade_eye_tree_eyeglasses.xml")
-#     img = cv2.imread("./img/test2.jpg")
-#     gray = cv2.cvtColor(img , cv2.COLOR_BGR2GRAY)
-#     glasses = eyeglasses.detectMultiScale(gray, 1.1, 3, 0, (30,30))
-#     for(x, y, w, h) in glasses:
-#         imges = cv2.rectangle(img, (x, y), (x+w , y+h), (0, 0, 300), 4)
-#     cv2.imwrite(f"./img/capture/{now}.jpg", imges)
+def FrontalFaceGlasses():
+    try:    
+        eyeglasses = cv2.CascadeClassifier("C:\Users\USER\Desktop\src\data\haarcascade_eye_tree_eyeglasses.xml")
+        img = cv2.imread("./img/test2.jpg")
+        gray = cv2.cvtColor(img , cv2.COLOR_BGR2GRAY)
+        glasses = eyeglasses.detectMultiScale(gray, 1.1, 3, 0, (30,30))
+        for(x, y, w, h) in glasses:
+            imges = cv2.rectangle(img, (x, y), (x+w , y+h), (0, 0, 300), 4)
+        cv2.imwrite(f"./img/capture/{now}.jpg", imges)
+        cv2.imshow('Glasses' , imges)
+    except UnboundLocalError:
+        cv2.imshow('Not Found' , imges)
 
 # FrontalFaces()
 # FrontalCatFaces()
