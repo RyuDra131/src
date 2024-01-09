@@ -15,9 +15,6 @@ GPIO.setup(LED,GPIO.OUT)
 cam = cv2.VideoCapture(0)
 now = datetime.now()
 
-tekito = "NVGrqvp2H4oGmYeWFunsf8y5icNucPFWh7slBNAY4Yq"
-otesuto = "GbK7VcEz4yOkTx6TfjyGz0s7sRdRfxk7uBfrJXh4fMQ"
-
 def send_message(Discovery_time):
     url = "https://notify-api.line.me/api/notify" 
     headers = {"Authorization" : "Bearer "+ tekito}

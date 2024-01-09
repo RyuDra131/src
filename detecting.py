@@ -29,7 +29,7 @@ def FrontalFaces():
 def FrontalCatFaces():
     try:
         frontal_catface = cv2.CascadeClassifier('./data/haarcascade_frontalcatface_extended.xml')
-        img = cv2.imread()
+        img = cv2.imread("./img/ramen.jpg")
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         catfaces = frontal_catface.detectMultiScale(gray, minSize=(50,50))
         for(x, y, w, h) in catfaces:
@@ -42,7 +42,7 @@ def FrontalCatFaces():
 
 def FrontalFaceGlasses():
     try:    
-        eyeglasses = cv2.CascadeClassifier("C:\Users\USER\Desktop\src\data\haarcascade_eye_tree_eyeglasses.xml")
+        eyeglasses = cv2.CascadeClassifier('./data/haarcascade_eye_tree_eyeglasses.xml')
         img = cv2.imread("./img/test2.jpg")
         gray = cv2.cvtColor(img , cv2.COLOR_BGR2GRAY)
         glasses = eyeglasses.detectMultiScale(gray, 1.1, 3, 0, (30,30))
@@ -54,7 +54,7 @@ def FrontalFaceGlasses():
         cv2.imshow('Not Found' , imges)
 
 # FrontalFaces()
-# FrontalCatFaces()
+FrontalCatFaces()
 
 cv2.waitKey(0)
 cv2.destroyAllWindows()
