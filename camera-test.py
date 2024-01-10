@@ -8,6 +8,9 @@ from datetime import datetime
 LED = 18
 SENSOR = 23
 
+tekito=""
+test=""
+
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(SENSOR,GPIO.IN)
 GPIO.setup(LED,GPIO.OUT)
