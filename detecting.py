@@ -29,7 +29,7 @@ def FrontalFaces():
 def FrontalCatFaces():
     try:
         frontal_catface = cv2.CascadeClassifier('./data/haarcascade_frontalcatface_extended.xml')
-        img = cv2.imread("./img/ramen.jpg")
+        img = cv2.imread("./img/cat.jpg")
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         catfaces = frontal_catface.detectMultiScale(gray, minSize=(50,50))
         for(x, y, w, h) in catfaces:
