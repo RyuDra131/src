@@ -1,15 +1,18 @@
 import RPi.GPIO as GPIO
 import subprocess
+from datetime import datetime
+import cv2
 import time
 from flask import Flask, request, abort
 from linebot import LineBotApi,WebhookHandler
 from linebot.exceptions import InvalidSignatureError
-from linebot.models import MessageEvent, TextMessage, TextSendMessage
+from linebot.models import MessageEvent, TextMessage, TextSendMessage, ImageSendMessage
 
 CGIR_SEND = 19
 RED_LED = 16
 BLUE_LED = 20
 GREEN_LED = 21
+SENSOR = 26
 
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(CGIR_SEND, GPIO.OUT)
@@ -26,6 +29,9 @@ GREEN_SHELL = "cgir send -c ./data/test_cgir.json -g19 GREEN_LED"
 app = Flask(__name__)
 linebot_api = LineBotApi('')
 handler = WebhookHandler('')
+
+cam = cv2.VideoCapture(0)
+now = datetime.now()
 
 @app.route("/callback", methods=['POST'])
 def callback():
@@ -71,18 +77,42 @@ def handler_message(event):
         print(e)
 
     if event.message.text == "状況を教えて！":
-        if (GPIO.input(RED_LED) | GPIO.input(BLUE_LED) | GPIO.input(GREEN_LED)):
-            if GPIO.input(RED_LED) == True:
-                text="今は「赤色」のLEDが点いてるよ！"
-            elif GPIO.input(BLUE_LED) == True:
-                text="今は「青色」のLEDが点いてるよ！"
-            elif GPIO.input(GREEN_LED) == True:
-                text="今は「緑色」のLEDが点いてるよ！"
-        else:
-            text="今は何も点いていないよ！"
+        try:
+            date = now.strftime("%Y%m%d_%H%M%S")
+            path = "/home/pi/src/img/capture" + date + ".jpg"
+            cv2.imwrite(path,cap)
+            text = "今のお部屋の状況だよ！"
+            linebot_api.reply_message(event.reply_token, ImageSendMessage(path))
+        except Exception as e:
+            print(e)
+            
 
     print(text)
     linebot_api.reply_message(event.reply_token, TextSendMessage(text=text))
 
+
 if __name__  == '__main__':
     app.run()
+
+while True:
+	ret,cap = cam.read()
+	key = cv2.waitKey(1)
+	cv2.imshow('frame', cap)
+	try:
+		if key == ord('q'):
+			break
+		elif (key == ord('s')):
+			date = now.strftime("%Y%m%d_%H%M%S")
+			path = "/home/pi/src/img/capture" + date + ".jpg"
+			cam.release()
+			w = cv2.imwrite(path,cap)
+			linebot_api.reply_message(TextSendMessage(text="誰かが来たみたいだよ！"),ImageSendMessage(path))
+			GPIO.output(BLUE_LED)
+			print('Completed.')
+	except Exception as e:
+		print(e)
+		print("Camera connection is" + ret)
+
+
+GPIO.cleanup()
+cv2.destroyAllWindows()
