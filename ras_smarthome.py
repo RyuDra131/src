@@ -27,6 +27,7 @@ AC_OFF_SHELL = "cgir send -c ./data/test_cgir.json -g19 AC_OFF"
 RED_SHELL = "cgir send -c ./data/test_cgir.json -g19 RED_LED"
 BLUE_SHELL = "cgir send -c ./data/test_cgir.json -g19 BLUE_LED"
 GREEN_SHELL = "cgir send -c ./data/test_cgir.json -g19 GREEN_LED"
+SUB_SHELL = "python camera_test.py"
 
 app = Flask(__name__)
 linebot_api = LineBotApi('YOUR_ACCESS_TOKEN')
@@ -35,7 +36,7 @@ TOKEN = "GROUP_ACCESS_TOKEN"
 
 now = datetime.now()
 
-proc = subprocess.Popen['python', 'camera_test.py']
+proc = subprocess.Popen(SUB_SHELL)
 
 path = ""
 
@@ -126,4 +127,4 @@ if __name__  == '__main__':
 
 
 GPIO.cleanup()
-# proc.terminate()
+proc.terminate()
