@@ -1,15 +1,20 @@
 import RPi.GPIO as GPIO
 import subprocess
+from datetime import datetime
+import cv2
 import time
+import requests
+from datetime import datetime
 from flask import Flask, request, abort
 from linebot import LineBotApi,WebhookHandler
 from linebot.exceptions import InvalidSignatureError
-from linebot.models import MessageEvent, TextMessage, TextSendMessage
+from linebot.models import MessageEvent, TextMessage, TextSendMessage, ImageSendMessage
 
 CGIR_SEND = 19
 RED_LED = 16
 BLUE_LED = 20
 GREEN_LED = 21
+SENSOR = 26
 
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(CGIR_SEND, GPIO.OUT)
@@ -24,8 +29,23 @@ BLUE_SHELL = "cgir send -c ./data/test_cgir.json -g19 BLUE_LED"
 GREEN_SHELL = "cgir send -c ./data/test_cgir.json -g19 GREEN_LED"
 
 app = Flask(__name__)
-linebot_api = LineBotApi('')
-handler = WebhookHandler('')
+linebot_api = LineBotApi('YOUR_ACCESS_TOKEN')
+handler = WebhookHandler('YOUR_CHANNEL_SECRET')
+TOKEN = "GROUP_ACCESS_TOKEN"
+
+now = datetime.now()
+
+proc = subprocess.Popen['python', 'camera_test.py']
+
+path = ""
+
+def smarthome_for_send_message(Discovery_time):
+    url = "https://notify-api.line.me/api/notify" 
+    headers = {"Authorization" : "Bearer "+ TOKEN}
+    files = {'imageFile': open(path, "rb")}
+    message =  (now.strftime("%Y%mm%dd_%Hh%Mm%Ss"),"(らずすまより)今のお部屋の状況だよ！")
+    payload = {"message" :  message} 
+    req = requests.post(url, headers = headers, params=payload, files=files)
 
 @app.route("/callback", methods=['POST'])
 def callback():
@@ -49,7 +69,7 @@ def handler_message(event):
             GPIO.cleanup()
             subprocess.call(AC_ON_SHELL, shell=True)
             text="電源を点けたよ！"
-        elif event.message.text == "電源けして！":
+        elif event.message.text == "電源きって！":
             GPIO.cleanup()
             subprocess.call(AC_OFF_SHELL, shell=True)
             text="電源を消したよ！"
@@ -65,24 +85,45 @@ def handler_message(event):
             GPIO.cleanup()
             subprocess.call(GREEN_SHELL, shell=True)
             text="LEDを「緑色」に変えたよ！"
+        elif event.message.text == "エアコンつけて！":
+            GPIO.cleanup()
+            subprocess.call(GREEN_SHELL, shell=True)
+            text="エアコンをつけたよ！" 
+        elif event.message.text == "エアコンけして！":
+            GPIO.cleanup()
+            subprocess.call(GREEN_SHELL, shell=True)
+            text="エアコンを消したよ！" 
+        elif event.message.text == "部屋の電気つけて！":
+            GPIO.cleanup()
+            subprocess.call(GREEN_SHELL, shell=True)
+            text="部屋の電気をつけたよ！"
+        elif event.message.text == "部屋の電気けして！":
+            GPIO.cleanup()
+            subprocess.call(GREEN_SHELL, shell=True)
+            text="部屋の電気を消したよ！" 
+
+        elif event.message.text == "状況を教えて！":
+            GPIO.cleanup()
+            date = now.strftime("%Y%mm%dd_%Hh%Mm%Ss")
+            camera_still = f"raspistill -o ./img/capture/{date}.jpg"
+            path = f"./img/capture/{date}.jpg"
+            subprocess.run(camera_still, shell=True)
+            smarthome_for_send_message(path)
+            text=""
+
         elif event.message.text:
             text="そのメッセージには対応できないよ！"
+
     except Exception as e:
         print(e)
-
-    if event.message.text == "状況を教えて！":
-        if (GPIO.input(RED_LED) | GPIO.input(BLUE_LED) | GPIO.input(GREEN_LED)):
-            if GPIO.input(RED_LED) == True:
-                text="今は「赤色」のLEDが点いてるよ！"
-            elif GPIO.input(BLUE_LED) == True:
-                text="今は「青色」のLEDが点いてるよ！"
-            elif GPIO.input(GREEN_LED) == True:
-                text="今は「緑色」のLEDが点いてるよ！"
-        else:
-            text="今は何も点いていないよ！"
 
     print(text)
     linebot_api.reply_message(event.reply_token, TextSendMessage(text=text))
 
+
 if __name__  == '__main__':
     app.run()
+
+
+GPIO.cleanup()
+# proc.terminate()

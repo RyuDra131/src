@@ -5,11 +5,10 @@ import time
 # import multiprocessing as mp
 from datetime import datetime 
 
-LED = 18
-SENSOR = 23
+LED = 20
+SENSOR = 26
 
-tekito=""
-test=""
+TOKEN = ""
 
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(SENSOR,GPIO.IN)
@@ -18,13 +17,13 @@ GPIO.setup(LED,GPIO.OUT)
 cam = cv2.VideoCapture(0)
 now = datetime.now()
 
-def send_message(Discovery_time):
+def detecting_send_message(Discovery_time):
     url = "https://notify-api.line.me/api/notify" 
-    headers = {"Authorization" : "Bearer "+ tekito}
+    headers = {"Authorization" : "Bearer "+ TOKEN}
     files = {'imageFile': open(path, "rb")}
-    message =  (now.strftime("%Y%mm%dd_%Hh%Mm%Ss"),"Fliming has been completed.")
+    message =  (now.strftime("%Y%mm%dd_%Hh%Mm%Ss"),"(らずすまより)誰かが来たみたいだよ！")
     payload = {"message" :  message} 
-    r = requests.post(url, headers = headers, params=payload, files=files)
+    req = requests.post(url, headers = headers, params=payload, files=files)
 
 # def check():
 # 	while True:
@@ -36,7 +35,6 @@ def send_message(Discovery_time):
 # 			time.sleep(0.5)
 # 		else:
 # 			break
-
 while True:
 	ret,cap = cam.read()
 	key = cv2.waitKey(1)
@@ -44,18 +42,17 @@ while True:
 	try:
 		if key == ord('q'):
 			break
-		elif (key == ord('s')) | (GPIO.input(SENSOR) == GPIO.HIGH):
+		elif GPIO.input(SENSOR) == GPIO.HIGH:
 			date = now.strftime("%Y%m%d_%H%M%S")
-			path = "/home/pi/Desktop/capture" + date + ".jpg"
+			path = "/home/pi/src/img/capture/" + date + ".jpg"
 			cam.release()
 			w = cv2.imwrite(path,cap)
-			send_message(path)
+			detecting_send_message(path)
 			GPIO.output(LED)
 			print('Completed.')
 	except Exception as e:
 		print(e)
 		print("Camera connection is" + ret)
-
 
 GPIO.cleanup()
 cv2.destroyAllWindows()
