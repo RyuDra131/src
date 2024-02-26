@@ -4,6 +4,7 @@ from datetime import datetime
 import cv2
 import time
 import requests
+from picamera import PiCamera
 from datetime import datetime
 from flask import Flask, request, abort
 from linebot import LineBotApi,WebhookHandler
@@ -27,26 +28,40 @@ AC_OFF_SHELL = "cgir send -c ./data/test_cgir.json -g19 AC_OFF"
 RED_SHELL = "cgir send -c ./data/test_cgir.json -g19 RED_LED"
 BLUE_SHELL = "cgir send -c ./data/test_cgir.json -g19 BLUE_LED"
 GREEN_SHELL = "cgir send -c ./data/test_cgir.json -g19 GREEN_LED"
-SUB_SHELL = "python camera_test.py"
 
 app = Flask(__name__)
-linebot_api = LineBotApi('YOUR_ACCESS_TOKEN')
-handler = WebhookHandler('YOUR_CHANNEL_SECRET')
-TOKEN = "GROUP_ACCESS_TOKEN"
+linebot_api = LineBotApi('BOT_ACCESS_TOKEN')
+handler = WebhookHandler('CHANNEL_SECRET')
+TOKEN = 'CHANNEL_TOKEN'
+
+path = "/home/pi/src/img/capture/image.jpg"
 
 now = datetime.now()
 
-proc = subprocess.Popen(SUB_SHELL)
-
-path = ""
-
-def smarthome_for_send_message(Discovery_time):
+def smarthome_for_send_message(sma):
     url = "https://notify-api.line.me/api/notify" 
     headers = {"Authorization" : "Bearer "+ TOKEN}
     files = {'imageFile': open(path, "rb")}
-    message =  (now.strftime("%Y%mm%dd_%Hh%Mm%Ss"),"(らずすまより)今のお部屋の状況だよ！")
+    message =  (now.strftime("%Y/%m/%d_%H:%M:%S"),"(らずすまより)今のお部屋の状況だよ！")
     payload = {"message" :  message} 
     req = requests.post(url, headers = headers, params=payload, files=files)
+
+def image_send_message():
+    try:
+        cam = PiCamera()
+        cam.capture(path)
+        cam.close()
+        frontal_face = cv2.CascadeClassifier('./data/haarcascade_frontalface_default.xml')
+        img = cv2.imread(path)
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        bodys = frontal_face.detectMultiScale(gray)
+        for(x, y, w, h) in bodys:
+            imgs = cv2.rectangle(img, (x, y), (x+w, y+h), (0, 0, 255), 3)
+        save_img = cv2.imwrite(path,imgs)
+        smarthome_for_send_message(save_img)
+    except Exception:
+        smarthome_for_send_message(img)
+
 
 @app.route("/callback", methods=['POST'])
 def callback():
@@ -65,6 +80,7 @@ def callback():
 @handler.add(MessageEvent, message=TextMessage)
 def handler_message(event):
     text = ""
+    path = "/home/pi/src/img/capture/image.jpg"
     try:
         if event.message.text == "電源つけて！":
             GPIO.cleanup()
@@ -104,13 +120,8 @@ def handler_message(event):
             text="部屋の電気を消したよ！" 
 
         elif event.message.text == "状況を教えて！":
-            GPIO.cleanup()
-            date = now.strftime("%Y%mm%dd_%Hh%Mm%Ss")
-            camera_still = f"raspistill -o ./img/capture/{date}.jpg"
-            path = f"./img/capture/{date}.jpg"
-            subprocess.run(camera_still, shell=True)
-            smarthome_for_send_message(path)
-            text=""
+            image_send_message()
+            text="結果をHomeチャンネルに送信したよ！"
 
         elif event.message.text:
             text="そのメッセージには対応できないよ！"
@@ -127,4 +138,5 @@ if __name__  == '__main__':
 
 
 GPIO.cleanup()
-proc.terminate()
+cv2.destroyAllWindows()
+# proc.terminate()
