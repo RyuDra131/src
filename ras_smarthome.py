@@ -24,11 +24,11 @@ GPIO.setup(CGIR_SEND_2, GPIO.OUT)
 GPIO.setup(CGIR_SEND_3, GPIO.OUT)
 
 # 赤外線送信（赤外線型アクリルスタンド）用のシェルコマンド
-AC_ON_SHELL = "cgir send -c ./data/test_cgir.json -g19 AC_ON"
-AC_OFF_SHELL = "cgir send -c ./data/test_cgir.json -g19 AC_OFF"
-RED_SHELL = "cgir send -c ./data/test_cgir.json -g19 RED_LED"
-BLUE_SHELL = "cgir send -c ./data/test_cgir.json -g19 BLUE_LED"
-GREEN_SHELL = "cgir send -c ./data/test_cgir.json -g19 GREEN_LED"
+AC_ON_SHELL = "cgir send -c ./data/test_cgir.json -g20 AC_ON"
+AC_OFF_SHELL = "cgir send -c ./data/test_cgir.json -g20 AC_OFF"
+RED_SHELL = "cgir send -c ./data/test_cgir.json -g20 RED_LED"
+BLUE_SHELL = "cgir send -c ./data/test_cgir.json -g20 BLUE_LED"
+GREEN_SHELL = "cgir send -c ./data/test_cgir.json -g20 GREEN_LED"
 
 # 赤外線送信（部屋の照明、部屋のエアコン）用のシェルコマンド
 MYROOM_LIGHT_ON_PIN1 = "cgir send -c ./data/myroom_codes.json -g16 LIGHT_ON"
