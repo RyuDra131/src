@@ -1,3 +1,4 @@
+# 各種パッケージのインポート
 import RPi.GPIO as GPIO
 import subprocess
 from datetime import datetime
@@ -11,41 +12,59 @@ from linebot import LineBotApi,WebhookHandler
 from linebot.exceptions import InvalidSignatureError
 from linebot.models import MessageEvent, TextMessage, TextSendMessage, ImageSendMessage
 
-CGIR_SEND = 19
-RED_LED = 16
-BLUE_LED = 20
-GREEN_LED = 21
-SENSOR = 26
+# 赤外線LED3本分のピン番号指定
+CGIR_SEND_1 = 16
+CGIR_SEND_2 = 20
+CGIR_SEND_3 = 21
 
+# 指定ピン番号のセットアップ（今回はBCM番号で指定）
 GPIO.setmode(GPIO.BCM)
-GPIO.setup(CGIR_SEND, GPIO.OUT)
-GPIO.setup(RED_LED, GPIO.OUT)
-GPIO.setup(BLUE_LED, GPIO.OUT)
-GPIO.setup(GREEN_LED, GPIO.OUT)
+GPIO.setup(CGIR_SEND_1, GPIO.OUT)
+GPIO.setup(CGIR_SEND_2, GPIO.OUT)
+GPIO.setup(CGIR_SEND_3, GPIO.OUT)
 
-AC_ON_SHELL = "cgir send -c ./data/test_cgir.json -g19 AC_ON"
-AC_OFF_SHELL = "cgir send -c ./data/test_cgir.json -g19 AC_OFF"
-RED_SHELL = "cgir send -c ./data/test_cgir.json -g19 RED_LED"
-BLUE_SHELL = "cgir send -c ./data/test_cgir.json -g19 BLUE_LED"
-GREEN_SHELL = "cgir send -c ./data/test_cgir.json -g19 GREEN_LED"
+# 赤外線送信（赤外線型アクリルスタンド）用のシェルコマンド
+AC_ON_SHELL = "cgir send -c ./data/test_cgir.json -g20 AC_ON"
+AC_OFF_SHELL = "cgir send -c ./data/test_cgir.json -g20 AC_OFF"
+RED_SHELL = "cgir send -c ./data/test_cgir.json -g20 RED_LED"
+BLUE_SHELL = "cgir send -c ./data/test_cgir.json -g20 BLUE_LED"
+GREEN_SHELL = "cgir send -c ./data/test_cgir.json -g20 GREEN_LED"
 
+# 赤外線送信（部屋の照明、部屋のエアコン）用のシェルコマンド
+MYROOM_LIGHT_ON_PIN1 = "cgir send -c ./data/myroom_codes.json -g16 LIGHT_ON"
+MYROOM_LIGHT_OFF_PIN1 = "cgir send -c ./data/myroom_codes.json -g16 LIGHT_OFF"
+MYROOM_AIR_ON_PIN1 = "cgir send -c ./data/myroom_codes.json -g16 AIR_ON"
+MYROOM_AIR_OFF_PIN1 = "cgir send -c ./data/myroom_codes.json -g16 AIR_OFF"
+MYROOM_LIGHT_ON_PIN2 = "cgir send -c ./data/myroom_codes.json -g20 LIGHT_ON"
+MYROOM_LIGHT_OFF_PIN2 = "cgir send -c ./data/myroom_codes.json -g20 LIGHT_OFF"
+MYROOM_AIR_ON_PIN2 = "cgir send -c ./data/myroom_codes.json -g20 AIR_ON"
+MYROOM_AIR_OFF_PIN2 = "cgir send -c ./data/myroom_codes.json -g20 AIR_OFF"
+MYROOM_LIGHT_ON_PIN3 = "cgir send -c ./data/myroom_codes.json -g21 LIGHT_ON"
+MYROOM_LIGHT_OFF_PIN3 = "cgir send -c ./data/myroom_codes.json -g21 LIGHT_OFF"
+MYROOM_AIR_ON_PIN3 = "cgir send -c ./data/myroom_codes.json -g21 AIR_ON"
+MYROOM_AIR_OFF_PIN3 = "cgir send -c ./data/myroom_codes.json -g21 AIR_OFF"
+
+# Flask実行のための設定
 app = Flask(__name__)
-linebot_api = LineBotApi('BOT_ACCESS_TOKEN')
-handler = WebhookHandler('CHANNEL_SECRET')
-TOKEN = 'CHANNEL_TOKEN'
 
+# 公式LINE、撮影した写真をトークルームに送信するためのトークン設定（各種トークンは個人情報になるので今回は伏せた状態でGitにデプロイしております。）
+linebot_api = LineBotApi('CHANNEL_ACCESS_TOKEN')
+handler = WebhookHandler('CHANNEL_SECRET')
+TOKEN = 'TALKROOM_ACCESS_TOKEN'
+
+# 写真保存先のパス
 path = "/home/pi/src/img/capture/image.jpg"
 
-now = datetime.now()
-
+# 写真送信用トークルームへの送信を行うための関数
 def smarthome_for_send_message(sma):
     url = "https://notify-api.line.me/api/notify" 
     headers = {"Authorization" : "Bearer "+ TOKEN}
     files = {'imageFile': open(path, "rb")}
-    message =  (now.strftime("%Y/%m/%d_%H:%M:%S"),"(らずすまより)今のお部屋の状況だよ！")
+    message =  (datetime.now().strftime("%Y/%m/%d_%H:%M:%S"),"(らずすまより)今のお部屋の状況だよ！")
     payload = {"message" :  message} 
     req = requests.post(url, headers = headers, params=payload, files=files)
 
+# 写真を撮り、撮ったものをOpenCVのHaar-Like分析にかけ、結果をトークルーム送信の関数↑に引き渡す関数
 def image_send_message():
     try:
         cam = PiCamera()
@@ -62,7 +81,7 @@ def image_send_message():
     except Exception:
         smarthome_for_send_message(img)
 
-
+# Webhookにて<アドレス>/callbackが叩かれたときの署名検証を行う関数
 @app.route("/callback", methods=['POST'])
 def callback():
     signature = request.headers['X-line-signature']
@@ -77,6 +96,7 @@ def callback():
     
     return 'OK'
 
+# 公式LINEのトークルームにメッセージが送られてきたときの分岐処理を行う関数
 @handler.add(MessageEvent, message=TextMessage)
 def handler_message(event):
     text = ""
@@ -104,19 +124,27 @@ def handler_message(event):
             text="LEDを「緑色」に変えたよ！"
         elif event.message.text == "エアコンつけて！":
             GPIO.cleanup()
-            subprocess.call(GREEN_SHELL, shell=True)
+            subprocess.call(MYROOM_AIR_ON_PIN1, shell=True)
+            subprocess.call(MYROOM_AIR_ON_PIN2, shell=True)
+            subprocess.call(MYROOM_AIR_ON_PIN3, shell=True)
             text="エアコンをつけたよ！" 
         elif event.message.text == "エアコンけして！":
             GPIO.cleanup()
-            subprocess.call(GREEN_SHELL, shell=True)
+            subprocess.call(MYROOM_AIR_OFF_PIN1, shell=True)
+            subprocess.call(MYROOM_AIR_OFF_PIN2, shell=True)
+            subprocess.call(MYROOM_AIR_OFF_PIN3, shell=True)
             text="エアコンを消したよ！" 
         elif event.message.text == "部屋の電気つけて！":
             GPIO.cleanup()
-            subprocess.call(GREEN_SHELL, shell=True)
+            subprocess.call(MYROOM_LIGHT_ON_PIN1, shell=True)
+            subprocess.call(MYROOM_LIGHT_ON_PIN2, shell=True)
+            subprocess.call(MYROOM_LIGHT_ON_PIN3, shell=True)
             text="部屋の電気をつけたよ！"
         elif event.message.text == "部屋の電気けして！":
             GPIO.cleanup()
-            subprocess.call(GREEN_SHELL, shell=True)
+            subprocess.call(MYROOM_LIGHT_OFF_PIN1, shell=True)
+            subprocess.call(MYROOM_LIGHT_OFF_PIN2, shell=True)
+            subprocess.call(MYROOM_LIGHT_OFF_PIN3, shell=True)
             text="部屋の電気を消したよ！" 
 
         elif event.message.text == "状況を教えて！":
@@ -129,14 +157,16 @@ def handler_message(event):
     except Exception as e:
         print(e)
 
+    # エラーがもし起きた際に確認用にprintでコンソールに出力
     print(text)
+    # 分岐処理によって出てきた結果であるテキストを公式LINEにレスポンスとして送信
     linebot_api.reply_message(event.reply_token, TextSendMessage(text=text))
 
-
+# Flaskの実行を行う処理
 if __name__  == '__main__':
     app.run()
 
-
+# ピンの破棄
 GPIO.cleanup()
+# OpenCVによって発生したウィンドウや処理をすべてキル
 cv2.destroyAllWindows()
-# proc.terminate()
